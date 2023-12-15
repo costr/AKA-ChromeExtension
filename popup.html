@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>A.K.A.</title>
+    <link rel="stylesheet" href="/ext/bootstrap.min.css">
+
+    <style>
+        body {
+            /* color: #fff; */
+            width: 400px;
+            height: 500px;
+            margin: 0;
+            padding: 1rem 2.5rem;
+            justify-content: center;
+            font-family: Arial, sans-serif;
+        }
+
+        body,
+        #offcanvasAllAkas {
+            background-color: #181818;
+        }
+
+        #extensionTitle,
+        #akasList,
+        .form-check-label,
+        #offcanvasAllAkasLabel,
+        .text-reset {
+            color: #fff;
+        }
+
+        .toast-body {
+            color: #000;
+        }
+
+        #extensionTitle {
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        #akaForm,
+        #akasList {
+            display: block;
+            width: 100%;
+        }
+
+        #akasList {
+            margin-top: 1.5rem;
+            padding-bottom: 1.5rem;
+        }
+
+        .akaHidden {
+            /* light gray italic emphasis */
+            font-style: italic;
+            color: #aaa;
+        }
+
+        /* .akaCount should show up 0.5rem to the left of .deleteButton */
+        .akaCount {
+            position: absolute;
+            right: 3rem;
+        }
+
+        .deleteButton {
+            height: 1.5rem;
+            filter: invert(22%) sepia(100%) saturate(2223%) hue-rotate(338deg) brightness(93%) contrast(84%);
+            position: absolute;
+            right: 1rem;
+            bottom: 0;
+            margin-bottom: 0.5rem;
+        }
+
+        .deleteButton:active {
+            filter: invert(14%) sepia(50%) saturate(6796%) hue-rotate(357deg) brightness(45%) contrast(124%);
+        }
+
+        .spinner-grow {
+            margin-right: 1rem;
+        }
+
+        .rounded-pill {
+            height: fit-content;
+        }
+
+        .favIcoDisplay {
+            border: 1px solid #0004;
+            border-radius: 15%;
+            padding: 0.15rem;
+            background-color: #aaa7;
+            box-shadow: 0.1rem 0.1rem 0.2rem #0004;
+            max-width: 50px;
+        }
+    </style>
+</head>
+
+<body>
+    <section id="akaFormBody">
+        <div id="akaForm" class="container mt-2">
+            <h1 id="extensionTitle">A.K.A.</h1><br />
+            <form id="akaForm" class="form-floating">
+                <div class="form-floating mb-2">
+                    <input type="text" class="form-control" id="wordToReplace" placeholder="Word to replace" required>
+                    <label for="wordToReplace">Word to replace</label>
+                </div>
+                <div class="form-floating mb-2">
+                    <input type="text" class="form-control" id="aka" placeholder="AKA" required>
+                    <label for="aka">A.K.A.</label>
+                </div>
+                <div class="form-group form-check form-switch">
+                    <input type="checkbox" class="form-check-input" role="switch" id="siteSpecific" checked>
+                    <label class="form-check-label" for="siteSpecific">Replace only on current site?</label>
+                </div>
+                <div class="form-group form-check form-switch">
+                    <input type="checkbox" class="form-check-input" role="switch" id="ignoreCase" checked>
+                    <label class="form-check-label" for="ignoreCase">Ignore case?</label>
+                </div>
+                <div class="form-group form-check form-switch">
+                    <input type="checkbox" class="form-check-input" role="switch" id="showOriginal">
+                    <label class="form-check-label" for="showOriginal">Include Original Word In Display?</label>
+                </div>
+                <button type="submit" class="btn btn-primary" id="saveButton">Save</button>
+            </form>
+        </div>
+    </section>
+    <section id="akasList" class="container">
+        <span class="row">
+            <span class="h1 col-auto">
+                On This Page
+            </span>
+            <button class="badge rounded-pill bg-info text-dark col-1 align-self-start"
+                title="AKAs found on the current tab" style="transform: scale(0.75);" disabled>
+                ?
+            </button>
+            <div class="col-auto ms-auto me-2">
+                <button id="allAkas" type="button" class="btn btn-success btn-sm" data-bs-toggle="offcanvas"
+                    data-bs-target="#offcanvasAllAkas" aria-controls="offcanvasAllAkas">All</button>
+            </div>
+        </span>
+        <button id="akaListLoader" class="btn btn-light" type="button" disabled>
+            <span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true"></span>
+            Loading...
+        </button>
+        <ul id="akasUList" class="list-group"></ul>
+    </section>
+
+    <!-- Flexbox container for aligning the toasts -->
+    <div aria-live="polite" aria-atomic="true" class="d-flex justify-content-center align-items-bottom w-100">
+        <!-- Then put toasts within -->
+        <div id="duplicateToast" class="toast mb-1" role="alert" aria-live="assertive" aria-atomic="true"
+            data-bs-delay="3500" data-bs-animation="true" data-bs-autohide="true">
+            <div class="toast-header bg-danger bg-gradient bg-opacity-10">
+                <span class="badge bg-danger bg-gradient ">Doh! </span>
+
+                <strong class="me-auto text-dark" style="margin-left: 5px;">Duplicate</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body bg-light bg-gradient">
+                This AKA already exists.
+            </div>
+        </div>
+
+        <div id="refreshToast" class="toast mb-1" role="alert" aria-live="assertive" aria-atomic="true"
+            data-bs-delay="3500" data-bs-animation="true" data-bs-autohide="true">
+            <div class="toast-header bg-success bg-gradient bg-opacity-10">
+                <!-- <span class="badge bg-success bg-gradient ">DELETED!</span> -->
+                <strong class="me-auto text-dark" style="margin-left: 5px;">DELETED!</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body bg-light bg-gradient">
+                You'll need to refresh the page for the changes to take effect.
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirm Modal -->
+    <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header alert-danger">
+                    <h5 class="modal-title" id="deleteModalLabel">Hold up!</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>
+                        You are about to delete this AKA.
+                    </p>
+                    <p>Are you sure you want to?</p>
+                    <small>
+                        <span><i><b>NOTE:</b></i></span> A page refresh is required!
+                    </small>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" id="deleteConfirm" class="btn btn-success">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- OffCanvas for All AKAs -->
+    <div class="offcanvas offcanvas-start p-2" data-bs-scroll="true" tabindex="-1" id="offcanvasAllAkas"
+        aria-labelledby="offcanvasAllAkasLabel">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="offcanvasAllAkasLabel">All AKAs</h5>
+            <button id="offcanvasAllAkasClose" type="button" class="btn-close btn-close-white text-reset"
+                data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body">
+            <button id="allAkaListLoader" class="btn btn-light" type="button" disabled>
+                <span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true"></span>
+                Loading...
+            </button>
+            <div class="accordion" id="allAkaAccordion"></div>
+        </div>
+    </div>
+
+    <script src="ext/bootstrap.min.js"></script>
+    <script src="src/popup.js"></script>
+</body>
+
+</html>
